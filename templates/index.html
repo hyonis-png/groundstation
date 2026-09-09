@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>CanSat Telemetry Viewer</title>
+
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+</head>
+
+<body>
+
+    <h1>CanSat Telemetry Viewer</h1>
+
+    <div id="accelerometer" style="width:100%;height:500px;"></div>
+
+    <div id="gyroscope" style="width:100%;height:500px;"></div>
+
+    <div id="pressure" style="width:100%;height:500px;"></div>
+
+<script>
+
+async function loadTelemetry() {
+
+    console.log("Starting...");
+
+    const response = await fetch("/api/telemetry");
+    console.log("Response:", response);
+
+    const telemetry = await response.json();
+    console.log("Telemetry:", telemetry);
+
+    alert("Loaded " + telemetry.length + " samples");
+
+
+  
+    const time = telemetry.map(t => t.time);
+
+    const accel_x = telemetry.map(t => t.accel_x);
+    const accel_y = telemetry.map(t => t.accel_y);
+    const accel_z = telemetry.map(t => t.accel_z);
+    const accel_mag = telemetry.map(t => t.acceleration_magnitude);
+
+    const gyro_x = telemetry.map(t => t.gyro_x);
+    const gyro_y = telemetry.map(t => t.gyro_y);
+    const gyro_z = telemetry.map(t => t.gyro_z);
+
+    const pressure = telemetry.map(t => t.pressure);
+
+
+    Plotly.newPlot("accelerometer", [
+
+        {
+            x: time,
+            y: accel_x,
+            name: "Accel X",
+            mode: "lines"
+        },
+
+        {
+            x: time,
+            y: accel_y,
+            name: "Accel Y",
+            mode: "lines"
+        },
+
+        {
+            x: time,
+            y: accel_z,
+            name: "Accel Z",
+            mode: "lines"
+        },
+
+        {
+            x: time,
+            y: accel_mag,
+            name: "Magnitude",
+            mode: "lines"
+        }
+
+    ],
+
+    {
+        title: "Accelerometer",
+        xaxis: {title: "Time"},
+        yaxis: {title: "Acceleration"}
+    });
+
+
+    Plotly.newPlot("gyroscope",[
+
+        {
+            x: time,
+            y: gyro_x,
+            name: "Gyro X",
+            mode: "lines"
+        },
+
+        {
+            x: time,
+            y: gyro_y,
+            name: "Gyro Y",
+            mode: "lines"
+        },
+
+        {
+            x: time,
+            y: gyro_z,
+            name: "Gyro Z",
+            mode: "lines"
+        }
+
+    ],
+
+    {
+        title: "Gyroscope",
+        xaxis:{title:"Time"},
+        yaxis:{title:"Angular Velocity"}
+    });
+
+
+    Plotly.newPlot("pressure",[
+
+        {
+            x: time,
+            y: pressure,
+            name: "Pressure",
+            mode: "lines"
+        }
+
+    ],
+
+    {
+        title:"Barometric Pressure",
+        xaxis:{title:"Time"},
+        yaxis:{title:"Pressure"}
+    });
+
+}
+
+loadTelemetry();
+
+</script>
+
+</body>
+
+</html>
