@@ -2,148 +2,1820 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>CanSat Telemetry Viewer</title>
+    <title>CanSat Ground Station</title>
 
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #080b0f;
+            color: #d6dce3;
+            font-family: "Courier New", monospace;
+        }
+
+        /* =====================================================
+           TOP STATUS BAR
+        ===================================================== */
+
+        .topbar {
+            height: 58px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            padding: 0 22px;
+
+            border-bottom: 1px solid #29313a;
+            background: #0d1117;
+        }
+
+        .system-name {
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .system-name span {
+            color: #7d8996;
+            font-weight: normal;
+        }
+
+        .top-status {
+            display: flex;
+            align-items: center;
+            gap: 25px;
+
+            font-size: 12px;
+            color: #8994a0;
+        }
+
+        .link-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            color: #bfc8d1;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+
+            border-radius: 50%;
+            background: #54d68b;
+        }
+
+
+        /* =====================================================
+           MAIN LAYOUT
+        ===================================================== */
+
+        .station {
+            min-height: calc(100vh - 58px);
+
+            display: grid;
+
+            grid-template-columns: 260px 1fr;
+        }
+
+
+        /* =====================================================
+           LEFT INSTRUMENT PANEL
+        ===================================================== */
+
+        .sidebar {
+            background: #0b0f14;
+            border-right: 1px solid #29313a;
+
+            padding: 20px 18px;
+        }
+
+        .section-label {
+            margin: 0 0 14px 0;
+
+            font-size: 10px;
+            font-weight: normal;
+
+            letter-spacing: 2px;
+
+            color: #65717e;
+        }
+
+
+        /* =====================================================
+           MISSION STATE
+        ===================================================== */
+
+        .mission-state {
+            margin-bottom: 28px;
+        }
+
+        #mission-status {
+            display: block;
+
+            font-size: 22px;
+            font-weight: bold;
+
+            margin-bottom: 4px;
+        }
+
+        .mission-subtitle {
+            font-size: 10px;
+            color: #687480;
+        }
+
+
+        /* =====================================================
+           CURRENT TELEMETRY
+        ===================================================== */
+
+        .telemetry-readouts {
+            border-top: 1px solid #222a32;
+            margin-bottom: 28px;
+        }
+
+        .readout {
+            display: grid;
+            grid-template-columns: 55px 1fr auto;
+            align-items: baseline;
+
+            padding: 11px 0;
+
+            border-bottom: 1px solid #1b2229;
+        }
+
+        .readout-name {
+            font-size: 10px;
+            color: #687480;
+        }
+
+        .readout-value {
+            text-align: right;
+
+            font-size: 17px;
+            color: #e5e9ed;
+        }
+
+        .readout-unit {
+            width: 53px;
+
+            padding-left: 7px;
+
+            font-size: 9px;
+            color: #65717e;
+        }
+
+
+        /* =====================================================
+           MAXIMUMS
+        ===================================================== */
+
+        .maximums {
+            margin-bottom: 28px;
+        }
+
+        .maximum-row {
+            display: flex;
+            justify-content: space-between;
+
+            padding: 7px 0;
+
+            font-size: 11px;
+        }
+
+        .maximum-row span:first-child {
+            color: #65717e;
+        }
+
+
+        /* =====================================================
+           EVENTS
+        ===================================================== */
+
+        .events {
+            border-top: 1px solid #29313a;
+            padding-top: 18px;
+        }
+
+        #flight-events {
+            margin: 0;
+            padding: 0;
+
+            list-style: none;
+        }
+
+        #flight-events li {
+            padding: 7px 0;
+
+            border-bottom: 1px solid #171d23;
+
+            font-size: 10px;
+            line-height: 1.5;
+
+            color: #aeb7c0;
+        }
+
+        #waiting-event {
+            color: #56616c !important;
+        }
+
+
+        /* =====================================================
+           MAIN DATA AREA
+        ===================================================== */
+
+        .workspace {
+            padding: 18px;
+
+            min-width: 0;
+        }
+
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            margin-bottom: 14px;
+        }
+
+        .workspace-title {
+            font-size: 11px;
+
+            letter-spacing: 2px;
+
+            color: #6f7b87;
+        }
+
+        .packet-counter {
+            font-size: 10px;
+            color: #65717e;
+        }
+
+        #sample-number {
+            color: #d1d8df;
+        }
+
+
+        /* =====================================================
+           PLOT GRID
+        ===================================================== */
+
+        .plots {
+            display: grid;
+
+            grid-template-columns: 1fr 1fr;
+
+            gap: 1px;
+
+            background: #29313a;
+
+            border: 1px solid #29313a;
+        }
+
+        .instrument {
+            min-width: 0;
+
+            background: #0d1117;
+
+            padding: 10px 12px 4px;
+        }
+
+        .instrument.altitude {
+            grid-column: 1 / -1;
+        }
+
+        .instrument-title {
+            height: 25px;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            font-size: 10px;
+            letter-spacing: 1.5px;
+
+            color: #75818d;
+        }
+
+        .instrument-title span:last-child {
+            font-size: 9px;
+            color: #4f5a65;
+        }
+
+        .plot {
+            width: 100%;
+            height: 260px;
+        }
+
+        .instrument.altitude .plot {
+            height: 300px;
+        }
+
+
+        /* =====================================================
+           RESPONSIVE
+        ===================================================== */
+
+        @media (max-width: 950px) {
+
+            .station {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                border-right: none;
+                border-bottom: 1px solid #29313a;
+            }
+
+            .plots {
+                grid-template-columns: 1fr;
+            }
+
+            .instrument.altitude {
+                grid-column: auto;
+            }
+
+            .top-status {
+                gap: 10px;
+            }
+
+        }
+
+    </style>
 </head>
+
 
 <body>
 
-    <h1>CanSat Telemetry Viewer</h1>
 
-    <div id="accelerometer" style="width:100%;height:500px;"></div>
+<!-- =====================================================
+     TOP BAR
+===================================================== -->
 
-    <div id="gyroscope" style="width:100%;height:500px;"></div>
+<header class="topbar">
 
-    <div id="pressure" style="width:100%;height:500px;"></div>
+    <div class="system-name">
+        CANSAT / <span>GROUND STATION</span>
+    </div>
+
+
+    <div class="top-status">
+
+        <span>
+            FLIGHT 1001
+        </span>
+
+        <span>
+            T+
+            <span id="mission-time">
+                0.00
+            </span>
+            s
+        </span>
+
+        <div class="link-status">
+
+            <span
+                id="status-dot"
+                class="status-dot">
+            </span>
+
+            <span id="connection-text">
+                LINK ACTIVE
+            </span>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+
+<div class="station">
+
+
+<!-- =====================================================
+     SIDEBAR
+===================================================== -->
+
+<aside class="sidebar">
+
+
+    <!-- MISSION STATE -->
+
+    <section class="mission-state">
+
+        <h2 class="section-label">
+            FLIGHT STATE
+        </h2>
+
+        <span id="mission-status">
+            PRE-LAUNCH
+        </span>
+
+        <span class="mission-subtitle">
+            FLIGHT 1001
+        </span>
+
+    </section>
+
+
+
+    <!-- CURRENT TELEMETRY -->
+
+    <section>
+
+        <h2 class="section-label">
+            LIVE DATA
+        </h2>
+
+        <div class="telemetry-readouts">
+
+
+            <div class="readout">
+
+                <span class="readout-name">
+                    ALT
+                </span>
+
+                <span
+                    id="current-altitude"
+                    class="readout-value">
+                    ---
+                </span>
+
+                <span class="readout-unit">
+                    m
+                </span>
+
+            </div>
+
+
+            <div class="readout">
+
+                <span class="readout-name">
+                    PRES
+                </span>
+
+                <span
+                    id="current-pressure"
+                    class="readout-value">
+                    ---
+                </span>
+
+                <span class="readout-unit">
+                    Pa
+                </span>
+
+            </div>
+
+
+            <div class="readout">
+
+                <span class="readout-name">
+                    ACC
+                </span>
+
+                <span
+                    id="current-acceleration"
+                    class="readout-value">
+                    ---
+                </span>
+
+                <span class="readout-unit">
+                    m/s²
+                </span>
+
+            </div>
+
+
+            <div class="readout">
+
+                <span class="readout-name">
+                    GYRO
+                </span>
+
+                <span
+                    id="current-gyro"
+                    class="readout-value">
+                    ---
+                </span>
+
+                <span class="readout-unit">
+                    °/s
+                </span>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- PEAK VALUES -->
+
+    <section class="maximums">
+
+        <h2 class="section-label">
+            PEAK VALUES
+        </h2>
+
+
+        <div class="maximum-row">
+
+            <span>
+                MAX ACC
+            </span>
+
+            <span>
+                <span id="max-acceleration">
+                    0.00
+                </span>
+                m/s²
+            </span>
+
+        </div>
+
+
+        <div class="maximum-row">
+
+            <span>
+                MAX GYRO
+            </span>
+
+            <span>
+                <span id="max-angular-velocity">
+                    0.00
+                </span>
+                °/s
+            </span>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- EVENTS -->
+
+    <section class="events">
+
+        <h2 class="section-label">
+            EVENT LOG
+        </h2>
+
+        <ul id="flight-events">
+
+            <li id="waiting-event">
+                -- awaiting flight events --
+            </li>
+
+        </ul>
+
+    </section>
+
+
+</aside>
+
+
+
+<!-- =====================================================
+     WORKSPACE
+===================================================== -->
+
+<main class="workspace">
+
+
+    <div class="workspace-header">
+
+        <span class="workspace-title">
+            TELEMETRY STREAM
+        </span>
+
+        <span class="packet-counter">
+            PACKET
+            <span id="sample-number">
+                000000
+            </span>
+        </span>
+
+    </div>
+
+
+
+    <div class="plots">
+
+
+        <!-- ALTITUDE -->
+
+        <section class="instrument altitude">
+
+            <div class="instrument-title">
+
+                <span>
+                    ALTITUDE
+                </span>
+
+                <span>
+                    BAROMETRIC ESTIMATE
+                </span>
+
+            </div>
+
+            <div
+                id="altitude"
+                class="plot">
+            </div>
+
+        </section>
+
+
+
+        <!-- ACCELEROMETER -->
+
+        <section class="instrument">
+
+            <div class="instrument-title">
+
+                <span>
+                    ACCELEROMETER
+                </span>
+
+                <span>
+                    X / Y / Z
+                </span>
+
+            </div>
+
+            <div
+                id="accelerometer"
+                class="plot">
+            </div>
+
+        </section>
+
+
+
+        <!-- GYROSCOPE -->
+
+        <section class="instrument">
+
+            <div class="instrument-title">
+
+                <span>
+                    GYROSCOPE
+                </span>
+
+                <span>
+                    X / Y / Z
+                </span>
+
+            </div>
+
+            <div
+                id="gyroscope"
+                class="plot">
+            </div>
+
+        </section>
+
+
+
+        <!-- PRESSURE -->
+
+        <section class="instrument">
+
+            <div class="instrument-title">
+
+                <span>
+                    BAROMETRIC PRESSURE
+                </span>
+
+                <span>
+                    PRESSURE
+                </span>
+
+            </div>
+
+            <div
+                id="pressure"
+                class="plot">
+            </div>
+
+        </section>
+
+
+
+        <!-- ACCELERATION MAGNITUDE -->
+
+        <section class="instrument">
+
+            <div class="instrument-title">
+
+                <span>
+                    ACCELERATION MAGNITUDE
+                </span>
+
+                <span>
+                    |A|
+                </span>
+
+            </div>
+
+            <div
+                id="acceleration-magnitude"
+                class="plot">
+            </div>
+
+        </section>
+
+
+    </div>
+
+</main>
+
+
+</div>
+
+
 
 <script>
 
-async function loadTelemetry() {
 
-    console.log("Starting...");
+// =====================================================
+// STATE
+// =====================================================
 
-    const response = await fetch("/api/telemetry");
-    console.log("Response:", response);
+let index = 0;
 
-    const telemetry = await response.json();
-    console.log("Telemetry:", telemetry);
+let maxAcceleration = 0;
+let maxAngularVelocity = 0;
 
-    alert("Loaded " + telemetry.length + " samples");
+let launchDetected = false;
+let apogeeDetected = false;
+let landingDetected = false;
 
+let launchCount = 0;
+let descentCount = 0;
+let landingCount = 0;
 
-  
-    const time = telemetry.map(t => t.time);
-
-    const accel_x = telemetry.map(t => t.accel_x);
-    const accel_y = telemetry.map(t => t.accel_y);
-    const accel_z = telemetry.map(t => t.accel_z);
-    const accel_mag = telemetry.map(t => t.acceleration_magnitude);
-
-    const gyro_x = telemetry.map(t => t.gyro_x);
-    const gyro_y = telemetry.map(t => t.gyro_y);
-    const gyro_z = telemetry.map(t => t.gyro_z);
-
-    const pressure = telemetry.map(t => t.pressure);
+let peakAltitude = -Infinity;
 
 
-    Plotly.newPlot("accelerometer", [
+
+// =====================================================
+// COMMON PLOT CONFIGURATION
+// =====================================================
+
+const plotConfig = {
+
+    responsive: true,
+
+    displaylogo: false
+
+};
+
+
+const commonLayout = {
+
+    paper_bgcolor: "#0d1117",
+
+    plot_bgcolor: "#0d1117",
+
+    font: {
+        family: "Courier New, monospace",
+        color: "#7d8996",
+        size: 10
+    },
+
+    margin: {
+        l: 58,
+        r: 15,
+        t: 15,
+        b: 42
+    },
+
+    showlegend: true,
+
+    legend: {
+        orientation: "h",
+        x: 0,
+        y: 1.08,
+
+        font: {
+            size: 9
+        }
+    },
+
+    xaxis: {
+
+        title: {
+            text: "TIMESTAMP",
+            font: {
+                size: 9
+            }
+        },
+
+        gridcolor: "#1c232b",
+
+        zerolinecolor: "#29313a",
+
+        linecolor: "#29313a",
+
+        tickfont: {
+            size: 9
+        }
+    },
+
+    yaxis: {
+
+        gridcolor: "#1c232b",
+
+        zerolinecolor: "#29313a",
+
+        linecolor: "#29313a",
+
+        tickfont: {
+            size: 9
+        }
+    }
+
+};
+
+
+
+// =====================================================
+// CREATE PLOTS
+// =====================================================
+
+
+Plotly.newPlot(
+
+    "accelerometer",
+
+    [
 
         {
-            x: time,
-            y: accel_x,
-            name: "Accel X",
-            mode: "lines"
+            x: [],
+            y: [],
+            mode: "lines",
+            name: "X"
         },
 
         {
-            x: time,
-            y: accel_y,
-            name: "Accel Y",
-            mode: "lines"
+            x: [],
+            y: [],
+            mode: "lines",
+            name: "Y"
         },
 
         {
-            x: time,
-            y: accel_z,
-            name: "Accel Z",
-            mode: "lines"
-        },
-
-        {
-            x: time,
-            y: accel_mag,
-            name: "Magnitude",
-            mode: "lines"
+            x: [],
+            y: [],
+            mode: "lines",
+            name: "Z"
         }
 
     ],
 
     {
-        title: "Accelerometer",
-        xaxis: {title: "Time"},
-        yaxis: {title: "Acceleration"}
-    });
+
+        ...commonLayout,
+
+        yaxis: {
+
+            ...commonLayout.yaxis,
+
+            title: {
+                text: "m/s²",
+                font: {
+                    size: 9
+                }
+            }
+
+        }
+
+    },
+
+    plotConfig
+
+);
 
 
-    Plotly.newPlot("gyroscope",[
+
+Plotly.newPlot(
+
+    "gyroscope",
+
+    [
 
         {
-            x: time,
-            y: gyro_x,
-            name: "Gyro X",
-            mode: "lines"
+            x: [],
+            y: [],
+            mode: "lines",
+            name: "X"
         },
 
         {
-            x: time,
-            y: gyro_y,
-            name: "Gyro Y",
-            mode: "lines"
+            x: [],
+            y: [],
+            mode: "lines",
+            name: "Y"
         },
 
         {
-            x: time,
-            y: gyro_z,
-            name: "Gyro Z",
-            mode: "lines"
+            x: [],
+            y: [],
+            mode: "lines",
+            name: "Z"
         }
 
     ],
 
     {
-        title: "Gyroscope",
-        xaxis:{title:"Time"},
-        yaxis:{title:"Angular Velocity"}
-    });
+
+        ...commonLayout,
+
+        yaxis: {
+
+            ...commonLayout.yaxis,
+
+            title: {
+                text: "ANGULAR VELOCITY",
+                font: {
+                    size: 9
+                }
+            }
+
+        }
+
+    },
+
+    plotConfig
+
+);
 
 
-    Plotly.newPlot("pressure",[
+
+Plotly.newPlot(
+
+    "pressure",
+
+    [
 
         {
-            x: time,
-            y: pressure,
-            name: "Pressure",
-            mode: "lines"
+            x: [],
+            y: [],
+            mode: "lines",
+            name: "PRESSURE"
         }
 
     ],
 
     {
-        title:"Barometric Pressure",
-        xaxis:{title:"Time"},
-        yaxis:{title:"Pressure"}
-    });
+
+        ...commonLayout,
+
+        showlegend: false,
+
+        yaxis: {
+
+            ...commonLayout.yaxis,
+
+            title: {
+                text: "Pa",
+                font: {
+                    size: 9
+                }
+            }
+
+        }
+
+    },
+
+    plotConfig
+
+);
+
+
+
+Plotly.newPlot(
+
+    "acceleration-magnitude",
+
+    [
+
+        {
+            x: [],
+            y: [],
+            mode: "lines",
+            name: "|A|"
+        }
+
+    ],
+
+    {
+
+        ...commonLayout,
+
+        showlegend: false,
+
+        yaxis: {
+
+            ...commonLayout.yaxis,
+
+            title: {
+                text: "m/s²",
+                font: {
+                    size: 9
+                }
+            }
+
+        }
+
+    },
+
+    plotConfig
+
+);
+
+
+
+Plotly.newPlot(
+
+    "altitude",
+
+    [
+
+        {
+            x: [],
+            y: [],
+            mode: "lines",
+            name: "ALT"
+        }
+
+    ],
+
+    {
+
+        ...commonLayout,
+
+        showlegend: false,
+
+        yaxis: {
+
+            ...commonLayout.yaxis,
+
+            title: {
+                text: "METERS",
+                font: {
+                    size: 9
+                }
+            }
+
+        }
+
+    },
+
+    plotConfig
+
+);
+
+
+
+// =====================================================
+// PLOT UPDATES
+// =====================================================
+
+
+function updateAccelerometer(sample) {
+
+    Plotly.extendTraces(
+
+        "accelerometer",
+
+        {
+
+            x: [
+                [sample.time],
+                [sample.time],
+                [sample.time]
+            ],
+
+            y: [
+                [sample.accel_x],
+                [sample.accel_y],
+                [sample.accel_z]
+            ]
+
+        },
+
+        [0, 1, 2]
+
+    );
 
 }
 
+
+
+function updateGyroscope(sample) {
+
+    Plotly.extendTraces(
+
+        "gyroscope",
+
+        {
+
+            x: [
+                [sample.time],
+                [sample.time],
+                [sample.time]
+            ],
+
+            y: [
+                [sample.gyro_x],
+                [sample.gyro_y],
+                [sample.gyro_z]
+            ]
+
+        },
+
+        [0, 1, 2]
+
+    );
+
+}
+
+
+
+function updatePressure(sample) {
+
+    Plotly.extendTraces(
+
+        "pressure",
+
+        {
+
+            x: [[sample.time]],
+
+            y: [[sample.pressure]]
+
+        },
+
+        [0]
+
+    );
+
+}
+
+
+
+function updateAccelerationMagnitude(sample) {
+
+    Plotly.extendTraces(
+
+        "acceleration-magnitude",
+
+        {
+
+            x: [[sample.time]],
+
+            y: [[sample.acceleration_magnitude]]
+
+        },
+
+        [0]
+
+    );
+
+}
+
+
+
+function updateAltitude(sample) {
+
+    Plotly.extendTraces(
+
+        "altitude",
+
+        {
+
+            x: [[sample.time]],
+
+            y: [[sample.altitude]]
+
+        },
+
+        [0]
+
+    );
+
+}
+
+
+
+// =====================================================
+// CURRENT INSTRUMENT READOUTS
+// =====================================================
+
+function updateCurrentReadouts(sample) {
+
+
+    if (sample.time != null) {
+
+        document.getElementById(
+            "mission-time"
+        ).textContent =
+            Number(sample.time).toFixed(2);
+
+    }
+
+
+    if (sample.altitude != null) {
+
+        document.getElementById(
+            "current-altitude"
+        ).textContent =
+            Number(sample.altitude).toFixed(1);
+
+    }
+
+
+    if (sample.pressure != null) {
+
+        document.getElementById(
+            "current-pressure"
+        ).textContent =
+            Number(sample.pressure).toFixed(0);
+
+    }
+
+
+    if (sample.acceleration_magnitude != null) {
+
+        document.getElementById(
+            "current-acceleration"
+        ).textContent =
+            Number(
+                sample.acceleration_magnitude
+            ).toFixed(2);
+
+    }
+
+
+    if (sample.gyro_magnitude != null) {
+
+        document.getElementById(
+            "current-gyro"
+        ).textContent =
+            Number(
+                sample.gyro_magnitude
+            ).toFixed(2);
+
+    }
+
+}
+
+
+
+// =====================================================
+// PEAK STATISTICS
+// =====================================================
+
+function updateFlightStatistics(sample) {
+
+
+    if (
+        sample.acceleration_magnitude != null
+    ) {
+
+        maxAcceleration = Math.max(
+
+            maxAcceleration,
+
+            sample.acceleration_magnitude
+
+        );
+
+
+        document.getElementById(
+            "max-acceleration"
+        ).textContent =
+            maxAcceleration.toFixed(2);
+
+    }
+
+
+    if (
+        sample.gyro_magnitude != null
+    ) {
+
+        maxAngularVelocity = Math.max(
+
+            maxAngularVelocity,
+
+            sample.gyro_magnitude
+
+        );
+
+
+        document.getElementById(
+            "max-angular-velocity"
+        ).textContent =
+            maxAngularVelocity.toFixed(2);
+
+    }
+
+}
+
+
+
+// =====================================================
+// EVENT LOG
+// =====================================================
+
+function addFlightEvent(
+    eventName,
+    time
+) {
+
+
+    const waitingEvent =
+        document.getElementById(
+            "waiting-event"
+        );
+
+
+    if (waitingEvent) {
+
+        waitingEvent.remove();
+
+    }
+
+
+    const eventList =
+        document.getElementById(
+            "flight-events"
+        );
+
+
+    const event =
+        document.createElement("li");
+
+
+    event.textContent =
+        `${Number(time).toFixed(2)} s  //  ${eventName}`;
+
+
+    eventList.appendChild(event);
+
+}
+
+
+
+// =====================================================
+// FLIGHT EVENT DETECTION
+// =====================================================
+
+function detectFlightEvents(sample) {
+
+
+    if (
+
+        sample.time == null ||
+
+        sample.altitude == null ||
+
+        sample.acceleration_magnitude == null
+
+    ) {
+
+        return;
+
+    }
+
+
+
+    // -------------------------------------------------
+    // LAUNCH
+    // -------------------------------------------------
+
+    if (!launchDetected) {
+
+
+        if (
+            sample.acceleration_magnitude > 10
+        ) {
+
+            launchCount++;
+
+        }
+
+        else {
+
+            launchCount = 0;
+
+        }
+
+
+        if (
+            launchCount >= 3
+        ) {
+
+            launchDetected = true;
+
+
+            document.getElementById(
+                "mission-status"
+            ).textContent =
+                "ASCENDING";
+
+
+            addFlightEvent(
+                "LAUNCH",
+                sample.time
+            );
+
+        }
+
+    }
+
+
+
+    // -------------------------------------------------
+    // PEAK ALTITUDE
+    // -------------------------------------------------
+
+    if (
+
+        launchDetected &&
+
+        sample.altitude > peakAltitude
+
+    ) {
+
+        peakAltitude =
+            sample.altitude;
+
+    }
+
+
+
+    // -------------------------------------------------
+    // APOGEE
+    // -------------------------------------------------
+
+    if (
+
+        launchDetected &&
+
+        !apogeeDetected
+
+    ) {
+
+
+        if (
+
+            sample.altitude <
+            peakAltitude - 1
+
+        ) {
+
+            descentCount++;
+
+        }
+
+        else {
+
+            descentCount = 0;
+
+        }
+
+
+        if (
+            descentCount >= 5
+        ) {
+
+            apogeeDetected = true;
+
+
+            document.getElementById(
+                "mission-status"
+            ).textContent =
+                "DESCENDING";
+
+
+            addFlightEvent(
+                "APOGEE",
+                sample.time
+            );
+
+        }
+
+    }
+
+
+
+    // -------------------------------------------------
+    // LANDING
+    // -------------------------------------------------
+
+    if (
+
+        apogeeDetected &&
+
+        !landingDetected
+
+    ) {
+
+
+        if (
+
+            sample.altitude < 5 &&
+
+            sample.acceleration_magnitude < 11
+
+        ) {
+
+            landingCount++;
+
+        }
+
+        else {
+
+            landingCount = 0;
+
+        }
+
+
+        if (
+            landingCount >= 10
+        ) {
+
+            landingDetected = true;
+
+
+            document.getElementById(
+                "mission-status"
+            ).textContent =
+                "LANDED";
+
+
+            addFlightEvent(
+                "LANDING",
+                sample.time
+            );
+
+        }
+
+    }
+
+}
+
+
+
+// =====================================================
+// TELEMETRY
+// =====================================================
+
+async function loadTelemetry() {
+
+
+    try {
+
+
+        const response =
+            await fetch(
+                `/api/telemetry/${index}`
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP error: ${response.status}`
+            );
+
+        }
+
+
+        const sample =
+            await response.json();
+
+
+
+        // -------------------------------------------------
+        // END OF FLIGHT
+        // -------------------------------------------------
+
+        if (sample.finished) {
+
+
+            document.getElementById(
+                "connection-text"
+            ).textContent =
+                "STREAM COMPLETE";
+
+
+            document.getElementById(
+                "status-dot"
+            ).style.background =
+                "#65717e";
+
+
+            return;
+
+        }
+
+
+
+        // -------------------------------------------------
+        // PACKET / CURRENT VALUES
+        // -------------------------------------------------
+
+        document.getElementById(
+            "sample-number"
+        ).textContent =
+            String(index).padStart(
+                6,
+                "0"
+            );
+
+
+        updateCurrentReadouts(sample);
+
+        updateFlightStatistics(sample);
+
+        detectFlightEvents(sample);
+
+
+
+        // -------------------------------------------------
+        // ACCELEROMETER
+        // -------------------------------------------------
+
+        if (
+
+            sample.time != null &&
+
+            sample.accel_x != null &&
+
+            sample.accel_y != null &&
+
+            sample.accel_z != null
+
+        ) {
+
+            updateAccelerometer(sample);
+
+        }
+
+
+
+        // -------------------------------------------------
+        // GYROSCOPE
+        // -------------------------------------------------
+
+        if (
+
+            sample.time != null &&
+
+            sample.gyro_x != null &&
+
+            sample.gyro_y != null &&
+
+            sample.gyro_z != null
+
+        ) {
+
+            updateGyroscope(sample);
+
+        }
+
+
+
+        // -------------------------------------------------
+        // PRESSURE
+        // -------------------------------------------------
+
+        if (
+
+            sample.time != null &&
+
+            sample.pressure != null
+
+        ) {
+
+            updatePressure(sample);
+
+        }
+
+
+
+        // -------------------------------------------------
+        // ACCELERATION MAGNITUDE
+        // -------------------------------------------------
+
+        if (
+
+            sample.time != null &&
+
+            sample.acceleration_magnitude != null
+
+        ) {
+
+            updateAccelerationMagnitude(
+                sample
+            );
+
+        }
+
+
+
+        // -------------------------------------------------
+        // ALTITUDE
+        // -------------------------------------------------
+
+        if (
+
+            sample.time != null &&
+
+            sample.altitude != null
+
+        ) {
+
+            updateAltitude(sample);
+
+        }
+
+
+
+        index++;
+
+
+        setTimeout(
+            loadTelemetry,
+            100
+        );
+
+
+    }
+
+
+    catch (error) {
+
+
+        console.error(
+            "Telemetry error:",
+            error
+        );
+
+
+        document.getElementById(
+            "connection-text"
+        ).textContent =
+            "LINK ERROR";
+
+
+        document.getElementById(
+            "status-dot"
+        ).style.background =
+            "#a95b5b";
+
+
+        setTimeout(
+            loadTelemetry,
+            1000
+        );
+
+    }
+
+}
+
+
+
+// =====================================================
+// START
+// =====================================================
+
 loadTelemetry();
 
+
 </script>
+
 
 </body>
 
